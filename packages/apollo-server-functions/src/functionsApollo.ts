@@ -25,7 +25,7 @@ export function graphqlFunctions(options: GraphQLOptions | FunctionsGraphQLOptio
       options: options,
       query: ctx.req.method === 'POST' ? ctx.req.body : ctx.req.query,
     }).then((gqlResponse) => {
-      ctx.res.headers('Content-Type', 'application/json');
+      ctx.res.headers['Content-Type'] = 'application/json';
       ctx.res.body = gqlResponse;
       ctx.done();
     }, (error: HttpQueryError) => {
@@ -41,7 +41,6 @@ export function graphqlFunctions(options: GraphQLOptions | FunctionsGraphQLOptio
 
       ctx.res.status = error.statusCode;
       ctx.res.body = error.message;
-      ctx.done();
     });
   };
 }
@@ -53,12 +52,38 @@ export interface FunctionsGraphiQLOptionsFunction {
 export function graphiqlFunctions(options: GraphiQL.GraphiQLData | FunctionsGraphiQLOptionsFunction) {
   return (ctx: HttpContext) => {
     const query = ctx.req.query;
-    return GraphiQL.resolveGraphiQLString(query, options, ctx).then(graphiqlString => {
-      ctx.res.headers('Content-Type', 'text/html');
+    return GraphiQL.resolveGraphiQLString(query, options, ctx)
+    .then((graphiqlString) => {
+      ctx.res.headers['Content-Type'] = 'text/html';
       ctx.res.body = graphiqlString;
     }, error => {
       ctx.status = 500;
       ctx.res.body = error.message;
     });
   };
+}
+
+/* creates subpath endpoints for both GraphQL and Graphiql, so this function has two sub-routes:
+    myfunc/graphql and myfunc/graphiql
+*/
+export function graphqlAndGraphiqlFunctions(
+      graphqlOptions: GraphQLOptions | FunctionsGraphQLOptionsFunction,
+      graphiqlOptions: GraphiQL.GraphiQLData | FunctionsGraphiQLOptionsFunction
+    ) {
+  const graphqlHandler = graphqlFunctions(graphqlOptions);
+  const graphiqlHandler = graphiqlFunctions(graphiqlOptions);
+
+  return (ctx: HttpContext)  => {
+    console.log('path', ctx.req.params.path);
+    switch(ctx.req.params.path)
+    {
+      case 'graphiql':
+        console.log('route is GraphIql')
+        return graphiqlHandler(ctx);
+      default:
+        console.log('route is Graphql')
+        return graphqlHandler(ctx, null);
+    }
+
+  }
 }

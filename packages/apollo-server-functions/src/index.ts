@@ -4,4 +4,5 @@ export {
   FunctionsGraphiQLOptionsFunction,
   graphqlFunctions,
   graphiqlFunctions,
+  graphqlAndGraphiqlFunctions
 } from './functionsApollo';
